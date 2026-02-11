@@ -1,0 +1,122 @@
+openapi: 3.1.0
+info:
+  title: Claude Bridge API
+  description: Execute commands on Sebastian's Mac via Claude Code
+  version: 1.0.0
+servers:
+  - url: https://your-machine.your-tailnet.ts.net
+    description: Sebastian's Mac via Tailscale Funnel
+paths:
+  /run-claude:
+    post:
+      operationId: runClaudeCommand
+      summary: Send a command to Claude Code (continues previous conversation)
+      description: Send an instruction to Claude Code. Continues the previous conversation by default.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  description: The instruction to send to Claude Code
+                working_directory:
+                  type: string
+                  description: Optional path to the project directory
+                continue_conversation:
+                  type: boolean
+                  description: Continue previous conversation (default true)
+                  default: true
+                timeout:
+                  type: integer
+                  description: Maximum seconds to wait (max 300)
+                  default: 120
+      responses:
+        '200':
+          description: Command executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  output:
+                    type: string
+                  error:
+                    type: string
+                    nullable: true
+                  continued:
+                    type: boolean
+        '401':
+          description: Unauthorized
+        '504':
+          description: Timeout
+  /new-session:
+    post:
+      operationId: startNewSession
+      summary: Start a fresh Claude session
+      description: Starts a new conversation instead of continuing the previous one.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  description: Initial prompt for the new session
+                working_directory:
+                  type: string
+                  description: Project directory path
+      responses:
+        '200':
+          description: New session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  output:
+                    type: string
+                  new_session:
+                    type: boolean
+        '401':
+          description: Unauthorized
+  /list-projects:
+    get:
+      operationId: listProjects
+      summary: List available projects
+      description: Returns projects in ~/Developer
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        path:
+                          type: string
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Check if bridge is running
+      description: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
